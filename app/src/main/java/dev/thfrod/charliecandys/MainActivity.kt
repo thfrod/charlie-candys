@@ -46,6 +46,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navOptions
 
 
@@ -90,23 +91,23 @@ class MainActivity : ComponentActivity() {
                             )
                         )
                     }
-
+                    val currentRoute by navController.currentBackStackEntryAsState()
 
                     Column(modifier = Modifier.fillMaxSize()) {
-                        TopAppBar(
-                            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        if (currentRoute?.destination?.route != "signIn" && currentRoute?.destination?.route != "signUp") {
+                            TopAppBar(colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                                 containerColor = MaterialTheme.colorScheme.secondary
-                            ),
-                            navigationIcon = {
+                            ), navigationIcon = {
                                 IconButton(onClick = { /* Do something */ }) {
                                     Icon(Icons.Default.Menu, contentDescription = "Menu")
                                 }
-                            },
-                            title = {
+                            }, title = {
                                 Image(
                                     painter = painterResource(id = R.drawable.charlie_logo),
                                     contentDescription = "Descrição da Imagem",
-                                    modifier = Modifier.fillMaxWidth().height(30.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(30.dp),
                                     contentScale = ContentScale.Fit
                                 )
                             }, actions = {
@@ -114,9 +115,11 @@ class MainActivity : ComponentActivity() {
                                     Icon(Icons.Default.Search, contentDescription = "Buscar")
                                 }
                             })
+                        }
+
                         NavHost(
                             navController = navController,
-                            startDestination = "products",
+                            startDestination = "signIn",
                             modifier = Modifier.weight(1f)
                         ) {
                             composable("products") {
@@ -132,29 +135,31 @@ class MainActivity : ComponentActivity() {
                                 SignUpScreen()
                             }
                         }
+                        if (currentRoute?.destination?.route != "signIn" && currentRoute?.destination?.route != "signUp") {
+                            BottomAppBar(actions = {
+                                navItems.forEach { item ->
 
-                        BottomAppBar(actions = {
-                            navItems.forEach { item ->
+                                    NavigationBarItem(selected = item.selecionado, onClick = {
+                                        if (!item.selecionado) {
+                                            navController.navigate(item.rota,
+                                                navOptions = navOptions {
+                                                    launchSingleTop = true
+                                                    popUpTo(navController.graph.startDestinationId)
+                                                })
+                                            navItems.forEach { it.selecionado = false }
+                                            item.selecionado = true
+                                        }
+                                    }, icon = {
+                                        Icon(
+                                            item.icone, contentDescription = item.titulo
+                                        )
+                                    }, label = {
+                                        Text(text = item.titulo)
+                                    })
+                                }
 
-                                NavigationBarItem(selected = item.selecionado, onClick = {
-                                    if (!item.selecionado) {
-                                        navController.navigate(item.rota, navOptions = navOptions {
-                                            launchSingleTop = true
-                                            popUpTo(navController.graph.startDestinationId)
-                                        })
-                                        navItems.forEach { it.selecionado = false }
-                                        item.selecionado = true
-                                    }
-                                }, icon = {
-                                    Icon(
-                                        item.icone, contentDescription = item.titulo
-                                    )
-                                }, label = {
-                                    Text(text = item.titulo)
-                                })
-                            }
-
-                        })
+                            })
+                        }
                     }
                 }
             }
