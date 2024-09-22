@@ -26,13 +26,13 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navController = rememberNavController()
 
-                    NavHost(navController = navController, startDestination = "products") {
+                    NavHost(navController = navController, startDestination = "signIn") {
                         composable("products") {
                             ProductsScreen()
                         }
 
                         composable("signIn") {
-                            SignInScreen(OnSignUpClick= {navController.navigate("signUp")})
+                            SignInScreen(OnSignUpClick= {navController.navigate("products")})
                         }
 
                         composable("signUp") {
