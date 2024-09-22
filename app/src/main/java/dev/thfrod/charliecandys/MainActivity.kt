@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("signIn") {
-                            SignInScreen(OnSignUpClick= {navController.navigate("products")})
+                            SignInScreen(onSignUpClick= {navController.navigate("signUp")}, onLogin = {navController.navigate("products")})
                         }
 
                         composable("signUp") {

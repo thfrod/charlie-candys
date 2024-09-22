@@ -1,5 +1,7 @@
 package dev.thfrod.charliecandys.ui.screens
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -35,15 +38,29 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.thfrod.charliecandys.R
 import dev.thfrod.charliecandys.User
+import dev.thfrod.charliecandys.data.PreferencesManager
+import dev.thfrod.charliecandys.`interface`.ApiLoginService
+import dev.thfrod.charliecandys.responses.ApiResponse
+import dev.thfrod.charliecandys.responses.LoginResponse
 import dev.thfrod.charliecandys.ui.theme.CharlieCandysTheme
+import dev.thfrod.charliecandys.utils.Constants
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+
 
 @Composable
-fun SignInScreen(OnSignUpClick:()->Unit,) {
+fun SignInScreen(onSignUpClick: () -> Unit, onLogin: () -> Unit) {
+    val context = LocalContext.current
     val inputModifier = Modifier
         .padding(8.dp)
         .fillMaxWidth()
 
-    val columnModifier = Modifier.background(color = MaterialTheme.colorScheme.secondary).fillMaxHeight()
+    val columnModifier = Modifier
+        .background(color = MaterialTheme.colorScheme.secondary)
+        .fillMaxHeight()
     val boxModifier = Modifier
         .padding(24.dp)
         .background(color = Color.White, shape = MaterialTheme.shapes.medium)
@@ -54,7 +71,7 @@ fun SignInScreen(OnSignUpClick:()->Unit,) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        var username by remember {
+        var email by remember {
             mutableStateOf("")
         }
         var password by remember {
@@ -69,8 +86,8 @@ fun SignInScreen(OnSignUpClick:()->Unit,) {
 
         Box(modifier = boxModifier) {
             Column(modifier = Modifier.padding(12.dp)) {
-                OutlinedTextField(value = username,
-                    onValueChange = { newValue -> username = newValue },
+                OutlinedTextField(value = email,
+                    onValueChange = { newValue -> email = newValue },
                     label = { Text(text = "Email") },
                     modifier = inputModifier,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -93,7 +110,7 @@ fun SignInScreen(OnSignUpClick:()->Unit,) {
                 Button(
                     onClick = {
                         onEnterClick(
-                            User(username, password)
+                            User(email, password), context, onLogin
                         )
                     }, modifier = inputModifier, shape = MaterialTheme.shapes.small
                 ) {
@@ -104,7 +121,7 @@ fun SignInScreen(OnSignUpClick:()->Unit,) {
                     modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center
                 ) {
                     TextButton(
-                        onClick = {OnSignUpClick()},
+                        onClick = { onSignUpClick() },
                         Modifier
                             .padding(8.dp)
                             .fillMaxWidth()
@@ -123,10 +140,49 @@ fun SignInScreen(OnSignUpClick:()->Unit,) {
 @Composable
 fun FormPreview() {
     CharlieCandysTheme {
-        SignInScreen(OnSignUpClick = {})
+        SignInScreen(onSignUpClick = {}, onLogin = {})
     }
 }
 
-fun onEnterClick(user: User) {
-    println("User: ${user.username}, Password: ${user.password}")
+fun onEnterClick(user: User, uiContext: Context, onLogin: () -> Unit) {
+    val userReq = User(user.email, user.password)
+
+    val retrofit = Retrofit.Builder().baseUrl(Constants.BASE_URL)
+        .addConverterFactory(GsonConverterFactory.create()).build()
+
+    val apiService = retrofit.create(ApiLoginService::class.java)
+    apiService.login(userReq).enqueue(object : Callback<ApiResponse<LoginResponse>> {
+        override fun onResponse(
+            call: Call<ApiResponse<LoginResponse>>, response: Response<ApiResponse<LoginResponse>>
+        ) {
+            if (response.isSuccessful) {
+                val token = response.body()?.data?.token
+                if (token != null) {
+                    Toast.makeText(uiContext, "Login bem-sucedido!", Toast.LENGTH_SHORT).show()
+                    val preferencesManager = PreferencesManager(uiContext)
+                    preferencesManager.saveToken(token)
+                    onLogin()
+                } else {
+                    Toast.makeText(
+                        uiContext,
+                        "Não foi possível realizar o login, tente novamente!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+
+            } else {
+                Toast.makeText(
+                    uiContext,
+                    "Não foi possível realizar o login, tente novamente!",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+        override fun onFailure(call: Call<ApiResponse<LoginResponse>>, t: Throwable) {
+            Toast.makeText(
+                uiContext, "Não foi possível realizar o Login, tente novamente!", Toast.LENGTH_SHORT
+            ).show()
+        }
+    })
 }

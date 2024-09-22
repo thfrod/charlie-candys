@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import dev.thfrod.charliecandys.R
 import dev.thfrod.charliecandys.`interface`.ApiProductService
 import dev.thfrod.charliecandys.models.Produto
+import dev.thfrod.charliecandys.utils.Constants
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -68,7 +69,7 @@ fun ProductsScreen() {
                                 .clip(shape = RoundedCornerShape(10.dp))
                                 .fillMaxWidth()
                                 .height(100.dp),
-                            placeholder = ColorPainter(Color.Gray),
+                            placeholder = painterResource(id = R.drawable.product_not_found),
                             contentScale = ContentScale.Crop
                         )
                     } else {
@@ -96,7 +97,7 @@ fun ProductsScreen() {
 }
 
 private fun getProdutos(onResult: (List<Produto>) -> Unit) {
-    val retrofit = Retrofit.Builder().baseUrl("http://192.168.0.107:8000/")
+    val retrofit = Retrofit.Builder().baseUrl(Constants.BASE_URL)
         .addConverterFactory(GsonConverterFactory.create()).build()
 
     val apiService = retrofit.create(ApiProductService::class.java)
